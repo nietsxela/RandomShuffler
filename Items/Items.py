@@ -51,6 +51,11 @@ class Card:
             return self.value_str
         return self.value_str + " of " + self.get_suit(self.suit)
 
+    def __eq__(self, other):
+        if isinstance(other, Card):
+            return self.suit == other.suit and self.rank == other.rank
+        return NotImplemented
+
 
 class Deck:
     CARDS_PER_DECK = 52
@@ -77,14 +82,14 @@ class Deck:
 
         return cards
 
-    def shuffle(self):
-        self.removed_cards = 0
-        self.current = iter(self.cards)
-
-        if self.shuffle_method is not None:
-            self.shuffle_method.shuffle(self.cards)
-        else:
-            random.shuffle(self.cards)
+    # def shuffle(self):
+    #     self.removed_cards = 0
+    #     self.current = iter(self.cards)
+    #
+    #     if self.shuffle_method is not None:
+    #         self.shuffle_method.shuffle(self.cards)
+    #     else:
+    #         random.shuffle(self.cards)
 
     def apply_shuffle_method(self, shuffle_method):
         self.shuffle_method = shuffle_method
@@ -105,6 +110,5 @@ class Deck:
     def remaining_cards(self):
         return self.total_cards - self.removed_cards
 
-d = Deck(1, True)
-d.shuffle()
-d.print_deck()
+# d = Deck(1, True)
+# d.print_deck()
