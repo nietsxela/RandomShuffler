@@ -1,6 +1,4 @@
 class AShuffler:
-    def __init__(self):
-        pass
 
     @staticmethod
     def shuffle(my_list):
@@ -21,3 +19,12 @@ class AShuffler:
         # for 2 decks this means we draw from deck x with S_x / (S_x + S_y) and deck with S_y / (S_x + S_y)
         # repeat until both decks are depleted fully
         pass
+
+    @staticmethod
+    def is_random(deck):
+        # todo
+        # many ways to do this but I think the simplest is to see if the guesser can get more than
+        # 2 std better than mean of simple algorithm
+        # RandomDeterminers will tell us mean and std of simple algorithm guesser
+        pass
+
