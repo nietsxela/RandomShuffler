@@ -2,7 +2,6 @@ from Items.Items import Deck
 import random
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 
 total = 0
 iters = 1000
