@@ -2,6 +2,8 @@ from Items.Items import Deck
 import random
 import heapq
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 ## methods to determine if something is random, should take in a list and return true of false
 
@@ -65,7 +67,7 @@ class ListNode:
 total = 0
 iters = 10000
 amount_correct = []
-a = 5
+a = 1
 for x in range(iters):
     target_list = Deck(a).cards
     guess_list = Deck(a).cards  # guess in order
@@ -80,12 +82,12 @@ for x in range(iters):
     for i in range(len(target_list)):
         target_card = target_list[i]
         total_len = 0
-        print(guessed_in_list)
+        # print(guessed_in_list)
         for l in node_heap:
             if l.is_valid:
                 total_len += l.length
 
-        print(total_len, i, a)
+        # print(total_len, i, a)
         assert total_len + i == (52 * a)
 
         while True:
@@ -96,14 +98,14 @@ for x in range(iters):
                 break
             else:
                 pass
-                print("REMOVING INVALID: " + str(nl.first) + " end pos " + str(nl.end_pos))
+                # print("REMOVING INVALID: " + str(nl.first) + " end pos " + str(nl.end_pos))
 
         if target_card == guess:
             sames += 1
 
         loc_of_true = guess_list.index(target_list[i])
         guessed_in_list.append(loc_of_true)
-        print("Guess number: " + str(i) + " guess: " + str(guess) + " target card: " + str(target_card) + ". guess is at position " + str(loc_of_true))
+        # print("Guess number: " + str(i) + " guess: " + str(guess) + " target card: " + str(target_card) + ". guess is at position " + str(loc_of_true))
         keys = (list(map_of_lists.keys()))
         keys.sort(reverse=True)
         for j in keys:
@@ -125,7 +127,35 @@ for x in range(iters):
     amount_correct.append(sames)
     total += sames
 
-pand
 
+
+df = pd.DataFrame(amount_correct)
+
+
+
+
+fig, ax = plt.subplots()
+
+xlim = (0, 15)
+ylim = (0, 3000)
+ax.set(xlim=xlim, ylim=ylim)
+
+# Generate a normal distribution, center at x=0 and y=5
+num_bins = 13
+n, bins, patches = ax.hist(amount_correct, num_bins)
+
+print(df.describe())
 print(total*1.0/iters)
+plt.show()
+
+
+# 1 std move.  If we get more than this then it is significant prob of getting right - 6.189067
+#count  10000.000000
+#mean       4.520700
+#std        1.668367
+#min        1.000000
+#25%        3.000000
+#50%        4.000000
+#75%        6.000000
+#max       13.000000
 
