@@ -141,7 +141,7 @@ ylim = (0, 3000)
 ax.set(xlim=xlim, ylim=ylim)
 
 # Generate a normal distribution, center at x=0 and y=5
-num_bins = 13
+num_bins = 52
 n, bins, patches = ax.hist(amount_correct, num_bins)
 
 print(df.describe())
