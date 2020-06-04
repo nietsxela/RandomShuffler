@@ -1,48 +1,77 @@
-import math
 import random
-from RandomDeterminers import RandomDeterminers2
+from RandomDeterminers.TopRandomDeterminer import TopRandomDeterminer
+from RandomDeterminers.StreakRandomDeterminer import StreakRandomDeterminer
+from RandomDeterminers.FreqRandomDeterminer import FreqRandomDeterminer
 from Shufflers.AShuffler import *
 import matplotlib.pyplot as plt
-import pandas as pd
 import matplotlib.ticker as ticker
 
 
-# todo make randomDeterminers compatible with np arrays
-
+##### determining how random a deck is based on ARandomDeterminer
+# each can take in a deck and see how well its internal guessing algorithm does
+# how_random and is_random are comparing the amount it could guess on this iter vs distribution
 num_cards = 52
+ordered_deck = np.arange(num_cards)
 
-o = np.arange(num_cards)
-AShuffler.count_rising_sequences(o)
-
-total_shuffles = 25
+total_shuffles = 13
 iters = 10000
-a = np.zeros([total_shuffles + 1, iters, num_cards])
+card_matrix = np.zeros([total_shuffles + 1, iters, num_cards])
 
 for i in range(iters):
-    a[0, i, :] = o
+    card_matrix[0, i, :] = ordered_deck
 
-print("Random Cutoff is: " + str(RandomDeterminers2.random_cutoff))
+# these are determiners
+determiners = []
 
-current_shuffle_num = 0
-avg_num_correct = []
+determiners.append(FreqRandomDeterminer(num_cards, iters))
+print("Randomizer using freq set")
+
+# determiners.append(StreakRandomDeterminer(num_cards, iters))
+print("Randomizer using streak set")
+
+# determiners.append(TopRandomDeterminer(num_cards, iters))
+print("Randomizer using top set")
+
+all_guesses = np.zeros([total_shuffles, iters, len(determiners)])
+
 for current_shuffle_num in range(total_shuffles):
-    random_list = []
+    print("Shuffle number: " + str(current_shuffle_num))
     for i in range(iters):
         shuf_new = AShuffler.shuffle(num_cards)
-        new_deck = a[current_shuffle_num, i, :][shuf_new]
-        how_random = AShuffler.how_random(o, new_deck)
-        random_list.append(how_random)
-        a[current_shuffle_num + 1, i, :] = new_deck
+        new_deck = card_matrix[current_shuffle_num, i, :][shuf_new]
 
-    num_correct = sum(random_list) / len(random_list)
-    avg_num_correct.append(num_correct)
-    print("After " + str(current_shuffle_num + 1) + " shuffles got: " + str(num_correct) + ". Is random: "
-          + str(num_correct < RandomDeterminers2.random_cutoff))
-    current_shuffle_num += 1
+        for j in range(len(determiners)):
+            all_guesses[current_shuffle_num, i, j] = determiners[j].how_random(new_deck, current_shuffle_num)
+
+        card_matrix[current_shuffle_num + 1, i, :] = new_deck
+
+
+# fig, ax = plt.subplots(2, len(determiners))
+fig = plt.figure(constrained_layout=True)
+gs = fig.add_gridspec(nrows=2, ncols=len(determiners))
+ax0 = fig.add_subplot(gs[0, :])
+average = []
+for i in range(len(determiners)):
+    ax0.plot(range(1, total_shuffles + 1), np.mean(all_guesses[:, :, i], 1), label=determiners[i].get_name()) # average across all iters per shuffle
+    ax1 = fig.add_subplot(gs[-1, i])
+    determiners[i].print_stats(ax1)
+    ax1.set_title(determiners[i].get_title())
+    ax1.set_yticklabels([])
+    average.append(determiners[i].df.mean()[0])
+
+ax0.set_title("Amount Correct by naive algorithm after each shuffle")
+ax0.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+ax0.yaxis.set_major_locator(ticker.MultipleLocator(3.0))
+ax0.set(xlabel='Shuffles')
+avg = (sum(average) / len(determiners))
+ax0.plot(range(1, total_shuffles + 1), [avg for x in range(total_shuffles)], label="average: " + str(round(avg, 2)))
+ax0.legend()
+ax0.grid(True)
+plt.show()
 
 # see number of rising sequences in a random deck on average
 num_rising_sequences = []
-iters = 100000
+iters = 100
 for x in range(iters):
     if x % 1000 == 0:
         print(x)
@@ -52,12 +81,25 @@ for x in range(iters):
     num_rising_sequences.append(rs)
 
 
-plt.plot(avg_num_correct)
-plt.plot([RandomDeterminers2.random_cutoff for x in avg_num_correct])
-plt.ylabel('Amount of correct guesses on average by naive Algorithm')
-plt.ylabel('Shuffles')
-plt.show()
+# Eulerean numbers
+num_cards = 52
+A_nr = {}
+for r in range(1, (num_cards//2) + 1):
+    val = math.pow(r, num_cards) - sum(
+        [(A_nr[y] * AShuffler.n_choose_k(num_cards + r - y, num_cards)) for y in range(1, r)])
+    A_nr[r] = val
+    A_nr[num_cards + 1 - r] = val
 
+U_pi = 1 / math.factorial(num_cards)
 
-
-A52 = np.zeros(52)
+var_distances = []
+max_shuffles = 10
+for k in range(0, max_shuffles):
+    print("num shuffles: " + str(k))
+    running_sum = 0
+    for r in range(1, num_cards + 1):
+        numerator = AShuffler.n_choose_k(num_cards + math.pow(2, k) - r, num_cards)
+        denom = math.pow(2, num_cards * k)
+        running_sum += A_nr[r] * abs(numerator / denom - U_pi)
+    var_distances.append(running_sum / 2)
+    print(var_distances)
