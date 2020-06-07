@@ -6,12 +6,24 @@ from scipy.stats import rv_discrete
 
 
 class FreqRandomDeterminer(ARandomDeterminer):
+    # count  10000.000000
+    # mean       4.530400
+    # std        1.685633
+    # min        1.000000
+    # 25%        3.000000
+    # 50%        4.000000
+    # 75%        6.000000
+    # max       13.000000
 
     def __init__(self, num_cards: int = 52, iters: int = 100):
         self.total_shuffles = 15
         self.frequencies_by_position = self.get_frequencies(num_cards, iters, self.total_shuffles)
         self.distributions = self.make_distributions(self.frequencies_by_position)
         ARandomDeterminer.__init__(self, num_cards, iters)
+
+    def setup(self):
+        ##todo this should be different for this one
+        return ARandomDeterminer.setup(self)
 
     def get_frequencies(self, num_cards: int = 52, iters: int = 100, total_shuffles: int = 15) -> np.array:
         card_matrix = np.zeros([total_shuffles + 1, iters, num_cards])
@@ -60,6 +72,7 @@ class FreqRandomDeterminer(ARandomDeterminer):
     def make_guesses(self, target_list: np.array, shuffle: int = 15) -> int:
         guesses = []
         sames = 0
+        max_tries = 5
         shuffle = min(self.total_shuffles, shuffle)
         for position in range(len(target_list)):
             tries = 0
@@ -68,7 +81,7 @@ class FreqRandomDeterminer(ARandomDeterminer):
             while guess in guesses:
                 tries += 1
                 guess = dist.ppf(random.random())
-                if tries >= 10:
+                if tries >= max_tries:
                     break
 
             if guess in guesses:

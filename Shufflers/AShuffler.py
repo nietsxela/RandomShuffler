@@ -23,7 +23,7 @@ class AShuffler:
 
     @staticmethod
     def riffle(deck_length: int, cut_location: int) -> list:
-        # todo iterlace from each of the two decks, based on following idea:
+        # iterlace from each of the two decks, based on following idea:
         # draw from top of deck x with probability: S_x / (S_x + (S_n - S_x))
         # where S_x is the remaining cards in x and S_n is the remaining cards all decks that havent been allocated
         # for 2 decks this means we draw from deck x with S_x / (S_x + S_y) and deck with S_y / (S_x + S_y)

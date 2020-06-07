@@ -1,10 +1,13 @@
 import random
+import scipy.stats as stats
+
 from RandomDeterminers.TopRandomDeterminer import TopRandomDeterminer
 from RandomDeterminers.StreakRandomDeterminer import StreakRandomDeterminer
 from RandomDeterminers.FreqRandomDeterminer import FreqRandomDeterminer
 from Shufflers.AShuffler import *
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from scipy.stats import rv_discrete
 
 
 ##### determining how random a deck is based on ARandomDeterminer
@@ -12,6 +15,8 @@ import matplotlib.ticker as ticker
 # how_random and is_random are comparing the amount it could guess on this iter vs distribution
 num_cards = 52
 ordered_deck = np.arange(num_cards)
+
+uniform_freq = np.ones((num_cards, num_cards)) / num_cards
 
 total_shuffles = 13
 iters = 10000
@@ -21,43 +26,55 @@ for i in range(iters):
     card_matrix[0, i, :] = ordered_deck
 
 # these are determiners
-determiners = []
+determiners = {}
 
-determiners.append(FreqRandomDeterminer(num_cards, iters))
+determiners["Freq"] = FreqRandomDeterminer(num_cards, iters)
 print("Randomizer using freq set")
 
-# determiners.append(StreakRandomDeterminer(num_cards, iters))
+determiners["Streak"] = StreakRandomDeterminer(num_cards, iters)
 print("Randomizer using streak set")
 
-# determiners.append(TopRandomDeterminer(num_cards, iters))
+determiners["Top"] = TopRandomDeterminer(num_cards, iters)
 print("Randomizer using top set")
 
 all_guesses = np.zeros([total_shuffles, iters, len(determiners)])
 
-for current_shuffle_num in range(total_shuffles):
+diffs = []
+kstests = []
+for current_shuffle_num in range(1, total_shuffles + 1):
     print("Shuffle number: " + str(current_shuffle_num))
     for i in range(iters):
         shuf_new = AShuffler.shuffle(num_cards)
-        new_deck = card_matrix[current_shuffle_num, i, :][shuf_new]
+        new_deck = card_matrix[current_shuffle_num - 1, i, :][shuf_new]
 
-        for j in range(len(determiners)):
-            all_guesses[current_shuffle_num, i, j] = determiners[j].how_random(new_deck, current_shuffle_num)
+        j = 0
+        for key in determiners.keys():
+            all_guesses[current_shuffle_num - 1, i, j] = determiners[key].how_random(new_deck, current_shuffle_num)
+            j += 1
 
-        card_matrix[current_shuffle_num + 1, i, :] = new_deck
+        card_matrix[current_shuffle_num, i, :] = new_deck
 
+    if "Freq" in determiners.keys():
+        freq = determiners["Freq"].frequencies_by_position[current_shuffle_num]
+        diffs.append(np.sum(np.square(np.subtract(freq, uniform_freq))))
+        kstests.append(stats.kstest(freq.flatten(), "uniform")[0])
 
-# fig, ax = plt.subplots(2, len(determiners))
 fig = plt.figure(constrained_layout=True)
-gs = fig.add_gridspec(nrows=2, ncols=len(determiners))
+gs = fig.add_gridspec(nrows=3, ncols=len(determiners))
 ax0 = fig.add_subplot(gs[0, :])
 average = []
-for i in range(len(determiners)):
-    ax0.plot(range(1, total_shuffles + 1), np.mean(all_guesses[:, :, i], 1), label=determiners[i].get_name()) # average across all iters per shuffle
-    ax1 = fig.add_subplot(gs[-1, i])
-    determiners[i].print_stats(ax1)
-    ax1.set_title(determiners[i].get_title())
+i = 0
+for key in determiners.keys():
+    det = determiners[key]
+    print("Plotting Chart: " + str(det.get_name()))
+    ax0.plot(range(1, total_shuffles + 1), np.mean(all_guesses[:, :, i], 1), label=det.get_name()) # average across all iters per shuffle
+    ax1 = fig.add_subplot(gs[1, i])
+    det.print_stats(ax1)
+    ax1.set_title(det.get_title())
     ax1.set_yticklabels([])
-    average.append(determiners[i].df.mean()[0])
+    average.append(det.df.mean()[0])
+    i += 1
+
 
 ax0.set_title("Amount Correct by naive algorithm after each shuffle")
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
@@ -67,6 +84,24 @@ avg = (sum(average) / len(determiners))
 ax0.plot(range(1, total_shuffles + 1), [avg for x in range(total_shuffles)], label="average: " + str(round(avg, 2)))
 ax0.legend()
 ax0.grid(True)
+
+if "Freq" in determiners.keys():
+    ax2 = fig.add_subplot(gs[2, 0])
+    ax2.set_title("Statistics for distribution after each shuffle")
+    ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+    ax2.set(xlabel='Shuffles')
+    ax2.plot(range(1, total_shuffles + 1), diffs, label="sum squared diff")
+    ax2.legend()
+    ax2.grid(True)
+
+    ax3 = fig.add_subplot(gs[2, 1])
+    ax3.set_title("Statistics for distribution after each shuffle")
+    ax3.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+    ax3.set(xlabel='Shuffles')
+    ax3.plot(range(1, total_shuffles + 1), kstests, label="kstest")
+    ax3.legend()
+    ax3.grid(True)
+
 plt.show()
 
 # see number of rising sequences in a random deck on average
